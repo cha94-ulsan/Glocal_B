@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>사업비 집행 도우미</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+:root {
+  --color-background-primary: #ffffff;
+  --color-background-secondary: #f5f5f3;
+  --color-background-tertiary: #eeede8;
+  --color-text-primary: #1a1a18;
+  --color-text-secondary: #5f5e5a;
+  --color-text-tertiary: #b4b2a9;
+  --color-border-tertiary: rgba(0,0,0,0.12);
+  --color-border-secondary: rgba(0,0,0,0.22);
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background-primary: #1e1e1c;
+    --color-background-secondary: #2a2a28;
+    --color-background-tertiary: #333330;
+    --color-text-primary: #f0efea;
+    --color-text-secondary: #a8a79f;
+    --color-text-tertiary: #6b6a64;
+    --color-border-tertiary: rgba(255,255,255,0.10);
+    --color-border-secondary: rgba(255,255,255,0.18);
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--color-background-tertiary);padding:20px;color:var(--color-text-primary)}
+.dash{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem}
+.hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.hdl{display:flex;align-items:center;gap:9px}
+.ico{width:34px;height:34px;border-radius:var(--border-radius-md);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.tnm{font-size:14px;font-weight:500;color:var(--color-text-primary)}
+.tsb{font-size:11px;color:var(--color-text-secondary);margin-top:1px}
+
+/* 탭 네비게이션 */
+.tab-nav{display:flex;gap:4px;background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:4px;margin-bottom:14px}
+.tab-btn{flex:1;font-size:12px;font-weight:500;padding:8px 6px;border-radius:var(--border-radius-md);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;transition:all .15s;border:none;background:transparent;color:var(--color-text-secondary)}
+.tab-btn i{font-size:14px}
+.tab-btn:hover{background:var(--color-background-primary);color:var(--color-text-primary)}
+.tab-btn.on{background:var(--color-background-primary);border-left:3px solid #185FA5;color:#0C447C}
+.tab-btn:nth-child(1).on{border-left-color:#185FA5;color:#0C447C}
+.tab-btn:nth-child(2).on{border-left-color:#0F6E56;color:#085041}
+.tab-btn:nth-child(3).on{border-left-color:#3B6D11;color:#27500A}
+.tab-btn:nth-child(4).on{border-left-color:#993C1D;color:#712B13}
+.tab-panel{display:none;border-top:0.5px solid var(--color-border-tertiary);padding-top:14px}
+.tab-panel.on{display:block}
+
+/* ===== 출장여비 ===== */
+.seg{display:flex;gap:6px;margin-bottom:10px}
+.seg-btn{flex:1;border-radius:var(--border-radius-md);padding:10px 6px;font-size:13px;font-weight:500;cursor:pointer;border:2px solid transparent;display:flex;flex-direction:column;align-items:center;gap:3px;line-height:1}
+.seg-btn .sub{font-size:10px;font-weight:400;opacity:0;height:12px;display:flex;align-items:center;gap:2px}
+.seg-btn.type-staff{background:#E6F1FB;color:#0C447C;border-color:#85B7EB}
+.seg-btn.type-staff.on{background:#185FA5;color:#fff;border-color:#185FA5}.seg-btn.type-staff.on .sub{opacity:1}
+.seg-btn.type-student{background:#EAF3DE;color:#27500A;border-color:#97C459}
+.seg-btn.type-student.on{background:#3B6D11;color:#fff;border-color:#3B6D11}.seg-btn.type-student.on .sub{opacity:1}
+.seg-btn.type-external{background:#EEEDFE;color:#3C3489;border-color:#AFA9EC}
+.seg-btn.type-external.on{background:#534AB7;color:#fff;border-color:#534AB7}.seg-btn.type-external.on .sub{opacity:1}
+.tv-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;padding:3px 10px;border-radius:100px;margin-bottom:10px}
+.badge-staff{background:#E6F1FB;color:#0C447C;border:0.5px solid #B5D4F4}
+.badge-student{background:#EAF3DE;color:#27500A;border:0.5px solid #C0DD97}
+.badge-external{background:#EEEDFE;color:#3C3489;border:0.5px solid #CECBF6}
+.rule-banner{display:flex;align-items:flex-start;gap:8px;padding:8px 12px;border-radius:var(--border-radius-md);margin-bottom:12px;font-size:12px;line-height:1.5;border:0.5px solid}
+.sect{font-size:12px;font-weight:500;color:var(--color-text-primary);margin:10px 0 6px;padding-bottom:4px;border-bottom:0.5px solid var(--color-border-tertiary)}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.fc{display:flex;flex-direction:column;gap:4px}
+.fc.full{grid-column:1/-1}
+.lbl{font-size:11px;color:var(--color-text-secondary);font-weight:500}
+.tv-input{width:100%;padding:7px 10px;font-size:12px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary)}
+.tv-input:focus{outline:none;border-color:#185FA5}
+.tv-sel{width:100%;padding:7px 28px 7px 10px;font-size:12px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%23888' stroke-width='2' d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.tv-sel:focus{outline:none;border-color:#185FA5}
+.rbox{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 14px;margin-top:10px}
+.dl-row{display:flex;justify-content:space-between;align-items:flex-start;padding:6px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.dl-row:last-child{border-bottom:none}
+.dl-name{font-size:12px;color:var(--color-text-secondary);display:flex;align-items:center;gap:4px;flex-shrink:0}
+.dl-right{text-align:right;flex:1;padding-left:8px}
+.dl-amt{font-size:13px;color:var(--color-text-primary);font-weight:500}
+.dl-note{font-size:11px;color:var(--color-text-tertiary)}
+.dl-car-info{font-size:11px;color:#633806;line-height:1.6;padding:6px 10px;background:#FAEEDA;border-radius:var(--border-radius-md);margin-top:4px}
+.total-row{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:8px 14px;background:#FAEEDA;border-radius:var(--border-radius-md)}
+.total-lbl{font-size:13px;font-weight:500;color:#633806}
+.total-amt{font-size:16px;font-weight:500;color:#633806}
+.total-note{font-size:11px;color:#854F0B;margin-top:4px;text-align:right}
+.tv-warn{background:#FCEBEB;border:0.5px solid #F7C1C1;border-radius:var(--border-radius-md);padding:8px 12px;font-size:11px;color:#791F1F;margin-top:8px;line-height:1.6}
+.doc-box-tv{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 14px;margin-top:10px;border:0.5px solid var(--color-border-tertiary)}
+.doc-tv-title{font-size:12px;font-weight:500;color:var(--color-text-primary);margin-bottom:6px}
+.doc-tv-item{font-size:11px;color:var(--color-text-secondary);line-height:1.8}
+.doc-tv-sub{font-size:11px;color:var(--color-text-tertiary);padding-left:14px;line-height:1.6;margin-bottom:2px}
+.tv-common-note{font-size:11px;color:var(--color-text-secondary);margin-top:8px;padding:7px 12px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);display:flex;align-items:flex-start;gap:5px;line-height:1.5}
+
+/* ===== 증빙서류 ===== */
+.doc-sel-wrap{position:relative;margin-bottom:10px}
+.doc-sel{width:100%;font-size:12px;padding:8px 32px 8px 10px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%23888' stroke-width='2' d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.doc-sel:focus{outline:none;border-color:#0F6E56}
+.warn-box{display:flex;align-items:flex-start;gap:6px;background:#FAEEDA;border:0.5px solid #FAC775;border-radius:var(--border-radius-md);padding:8px 10px;font-size:11px;color:#633806;margin-bottom:10px;line-height:1.5}
+.ditem-wrap{display:flex;align-items:flex-start;gap:7px;padding:7px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.ditem-wrap:last-child{border-bottom:none}
+.req-tag{font-size:9px;padding:2px 6px;border-radius:10px;white-space:nowrap;flex-shrink:0;margin-top:2px}
+.rt-req{background:#FCEBEB;color:#791F1F}
+.rt-opt{background:var(--color-background-secondary);color:var(--color-text-secondary)}
+.di-nm{font-size:12px;color:var(--color-text-primary);font-weight:500;line-height:1.3}
+.doc-empty{font-size:12px;color:var(--color-text-tertiary);text-align:center;padding:16px 0}
+
+/* ===== 사전검토 ===== */
+.pr-bar{display:flex;gap:3px;margin-bottom:8px}
+.sb-s{flex:1;height:3px;border-radius:2px;background:var(--color-border-tertiary)}
+.sb-s.done{background:#639922}.sb-s.active{background:#185FA5}
+.step-lbl{font-size:11px;color:var(--color-text-secondary);margin-bottom:9px}
+.step-lbl span{font-weight:500;color:var(--color-text-primary)}
+.cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:8px}
+.cc{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:7px 4px;cursor:pointer;text-align:center;background:var(--color-background-secondary)}
+.cc:hover{border-color:#185FA5;background:#E6F1FB}
+.cc.sel{border:1.5px solid #185FA5;background:#E6F1FB}
+.cc-ic{font-size:17px;margin-bottom:2px}
+.cc-nm{font-size:10px;font-weight:500;color:var(--color-text-primary)}
+.q-box{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px;margin-bottom:8px}
+.q-txt{font-size:12px;font-weight:500;color:var(--color-text-primary);line-height:1.6;margin-bottom:5px}
+.q-hint{font-size:11px;color:var(--color-text-secondary);line-height:1.5}
+.ans-wrap{display:flex;gap:6px;margin-bottom:8px}
+.ans-btn{flex:1;padding:7px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-secondary);cursor:pointer;font-size:12px}
+.ans-btn.ay{background:#EAF3DE;border-color:#C0DD97;color:#27500A;font-weight:500}
+.ans-btn.an{background:#FCEBEB;border-color:#F7C1C1;color:#791F1F;font-weight:500}
+.nav-btns{display:flex;gap:6px}
+.nav-btn{flex:1;padding:7px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-secondary);cursor:pointer;font-size:12px}
+.nav-btn:disabled{opacity:.35;cursor:not-allowed}
+.nav-btn.primary{background:#185FA5;color:white;border-color:#185FA5}
+.res-ok{background:#EAF3DE;border:0.5px solid #C0DD97;border-radius:var(--border-radius-md);padding:10px 12px;margin-bottom:8px}
+.res-warn{background:#FAEEDA;border:0.5px solid #FAC775;border-radius:var(--border-radius-md);padding:10px 12px;margin-bottom:8px}
+.res-no{background:#FCEBEB;border:0.5px solid #F7C1C1;border-radius:var(--border-radius-md);padding:10px 12px;margin-bottom:8px}
+.res-vd{font-size:13px;font-weight:500;margin-bottom:4px}
+.res-ok .res-vd{color:#27500A}.res-warn .res-vd{color:#633806}.res-no .res-vd{color:#791F1F}
+.res-desc{font-size:12px;line-height:1.5}
+.res-ok .res-desc{color:#3B6D11}.res-warn .res-desc{color:#854F0B}.res-no .res-desc{color:#A32D2D}
+.chk-list{margin-bottom:8px}
+.chk-item{display:flex;align-items:flex-start;gap:7px;font-size:11px;line-height:1.5;padding:4px 0;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-primary)}
+.chk-item:last-child{border-bottom:none}
+.chk-item i{flex-shrink:0;margin-top:1px;font-size:13px}
+.ci-ok{color:#639922}.ci-warn{color:#EF9F27}.ci-no{color:#E24B4A}.ci-skip{color:var(--color-text-tertiary)}
+.restart-btn{width:100%;padding:7px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-secondary);cursor:pointer;font-size:12px;margin-top:4px}
+.restart-btn:hover{background:var(--color-background-secondary)}
+
+/* ===== FAQ ===== */
+.faq-cats{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
+.fc-btn{font-size:11px;padding:3px 9px;border-radius:20px;border:0.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-secondary);cursor:pointer}
+.fc-btn.on{background:#993C1D;color:white;border-color:#993C1D}
+.faq-item{border-bottom:0.5px solid var(--color-border-tertiary)}
+.faq-item:last-child{border-bottom:none}
+.faq-q-row{display:flex;align-items:flex-start;gap:6px;padding:8px 0;cursor:pointer}
+.faq-q-txt{font-size:12px;color:var(--color-text-secondary);flex:1;line-height:1.5}
+.faq-q-txt.open{color:var(--color-text-primary);font-weight:500}
+.faq-ans{font-size:12px;color:var(--color-text-secondary);line-height:1.6;padding:0 0 9px 18px}
+</style>
+</head>
+<body>
+<div class="dash">
+
+<!-- 단일 카드 + 탭 -->
+<div class="card">
+  <div class="hd">
+    <div class="hdl">
+      <div class="ico" style="background:#FAEEDA;color:#854F0B"><i class="ti ti-tool"></i></div>
+      <div>
+        <div class="tnm">사업비 집행 도우미</div>
+        <div class="tsb">여비 계산 · 증빙서류 · 집행 검토 · FAQ</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-nav">
+    <button class="tab-btn on" onclick="switchTab('travel',this)"><i class="ti ti-calculator"></i>출장여비 계산</button>
+    <button class="tab-btn" onclick="switchTab('doc',this)"><i class="ti ti-file-check"></i>증빙서류 안내</button>
+    <button class="tab-btn" onclick="switchTab('pr',this)"><i class="ti ti-shield-check"></i>집행 가능 검토</button>
+    <button class="tab-btn" onclick="switchTab('faq',this)"><i class="ti ti-help"></i>자주 묻는 질문</button>
+  </div>
+
+  <!-- ===== 탭1: 출장여비 ===== -->
+  <div class="tab-panel on" id="panel-travel">
+    <div style="margin-bottom:6px;font-size:11px;color:var(--color-text-secondary);font-weight:500">구분 선택</div>
+    <div class="seg">
+      <button class="seg-btn type-staff on" onclick="setType('staff',this)"><span>교직원</span><span class="sub"><i class="ti ti-check" style="font-size:10px"></i>선택됨</span></button>
+      <button class="seg-btn type-student" onclick="setType('student',this)"><span>학생</span><span class="sub"><i class="ti ti-check" style="font-size:10px"></i>선택됨</span></button>
+      <button class="seg-btn type-external" onclick="setType('external',this)"><span>외부인</span><span class="sub"><i class="ti ti-check" style="font-size:10px"></i>선택됨</span></button>
+    </div>
+    <div id="tv-sel-badge" class="tv-badge badge-staff"><i class="ti ti-user-check" style="font-size:12px"></i><span id="tv-badge-txt">교직원 선택됨</span></div>
+    <div id="tv-rule-banner" class="rule-banner" style="background:#E6F1FB;color:#0C447C;border-color:#B5D4F4"><i class="ti ti-file-certificate" style="font-size:14px;flex-shrink:0;margin-top:1px"></i><span id="tv-rule-txt">울산대학교 여비기준지침 적용 — 일비 25,000원/일 · 식비 12,000원/식 (정액)</span></div>
+    <div class="sect">기본 정보</div>
+    <div class="fg">
+      <div class="fc"><div class="lbl">출장지</div><select class="tv-sel" id="tv-dest" onchange="handleDestChange()"><option value="other" selected>그외 지역</option><option value="seoul">서울</option><option value="metro">광역시</option><option value="local">근무지 내 출장</option></select></div>
+      <div class="fc"><div class="lbl" id="days-lbl">출장일수</div><select class="tv-sel" id="tv-days" onchange="updateProvCnt();tvCalc()"><option value="1">1일</option><option value="2">2일</option><option value="3">3일</option><option value="4">4일</option><option value="5">5일</option></select></div>
+      <div class="fc" id="meal-count-wrap"><div class="lbl">식사 횟수 (총)</div><select class="tv-sel" id="tv-meals" onchange="tvCalc()"><option value="0">0식</option><option value="1">1식</option><option value="2">2식</option><option value="3">3식</option><option value="4">4식</option><option value="6">6식</option><option value="9">9식</option></select></div>
+      <div class="fc" id="meal-prov-wrap" style="display:none"><div class="lbl">식사 제공 여부</div><select class="tv-sel" id="tv-meal-prov" onchange="updateMealUI();tvCalc()"><option value="no">제공 없음</option><option value="yes">일부/전부 제공</option></select></div>
+      <div class="fc" id="meal-prov-cnt-wrap" style="display:none"><div class="lbl">제공된 식사 수</div><select class="tv-sel" id="tv-prov-cnt" onchange="tvCalc()"></select></div>
+    </div>
+    <div class="sect" id="sect-stay">숙박</div>
+    <div class="fg" id="stay-fg">
+      <div class="fc"><div class="lbl">숙박 여부</div><select class="tv-sel" id="tv-stay" onchange="tvCalc()"><option value="no">숙박 없음</option><option value="yes">숙박 있음</option></select></div>
+      <div class="fc" id="stay-nights-wrap" style="display:none"><div class="lbl">숙박 일수</div><select class="tv-sel" id="tv-nights" onchange="tvCalc()"><option value="1">1박</option><option value="2">2박</option><option value="3">3박</option><option value="4">4박</option></select></div>
+      <div class="fc full" id="stay-cost-wrap" style="display:none"><div class="lbl">실제 숙박비 (원, 1박당)</div><input class="tv-input" type="number" id="tv-stay-cost" placeholder="예: 90000" oninput="tvCalc()"></div>
+    </div>
+    <div class="sect" id="sect-trans">교통</div>
+    <div class="fg" id="trans-fg">
+      <div class="fc full"><div class="lbl">교통수단</div><select class="tv-sel" id="tv-trans" onchange="tvCalc()"><option value="public">대중교통 (철도·항공·선박·버스)</option><option value="car">자가 차량</option></select></div>
+      <div class="fc full" id="trans-cost-wrap"><div class="lbl">실제 교통비 (원)</div><input class="tv-input" type="number" id="tv-trans-cost" placeholder="예: 53400" oninput="tvCalc()"></div>
+    </div>
+    <div id="result-area"></div>
+  </div>
+
+  <!-- ===== 탭2: 증빙서류 ===== -->
+  <div class="tab-panel" id="panel-doc">
+    <div class="doc-sel-wrap">
+      <select class="doc-sel" id="doc-select" onchange="showDoc(this.value)"><option value="">— 집행항목을 선택하세요 —</option></select>
+    </div>
+    <div id="doc-body"></div>
+  </div>
+
+  <!-- ===== 탭3: 사전검토 ===== -->
+  <div class="tab-panel" id="panel-pr">
+    <div class="pr-bar" id="pr-bar"></div>
+    <div class="step-lbl" id="pr-lbl"><span>단계 1 / 6</span> — 집행항목 선택</div>
+    <div id="pr-main"></div>
+  </div>
+
+  <!-- ===== 탭4: FAQ ===== -->
+  <div class="tab-panel" id="panel-faq">
+    <div class="faq-cats" id="faq-cats"></div>
+    <div id="faq-list"></div>
+  </div>
+
+</div><!-- /.card -->
+</div><!-- /.dash -->
+
+<script>
+function v(id){return document.getElementById(id);}
+function n(id){return parseFloat(v(id).value)||0;}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+/* 탭 전환 */
+function switchTab(name,btn){
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('on');});
+  document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('on');});
+  btn.classList.add('on');
+  v('panel-'+name).classList.add('on');
+}
+
+/* ===== 출장여비 ===== */
+var curType='staff';
+var CFG={
+  staff:{badgeClass:'badge-staff',bannerBg:'#E6F1FB',bannerColor:'#0C447C',bannerBorder:'#B5D4F4',pilBg:'#E6F1FB',pilColor:'#185FA5',label:'교직원'},
+  student:{badgeClass:'badge-student',bannerBg:'#EAF3DE',bannerColor:'#27500A',bannerBorder:'#C0DD97',pilBg:'#EAF3DE',pilColor:'#3B6D11',label:'학생'},
+  external:{badgeClass:'badge-external',bannerBg:'#EEEDFE',bannerColor:'#3C3489',bannerBorder:'#CECBF6',pilBg:'#EEEDFE',pilColor:'#534AB7',label:'외부인'}
+};
+var TV_COMMON_NOTE='<div class="tv-common-note"><i class="ti ti-info-circle" style="font-size:12px;flex-shrink:0;margin-top:1px"></i><span>이외 사항은 울산대학교 여비기준지침, 공무원 여비 규정을 참고하여 주시기 바랍니다.</span></div>';
+
+function handleDestChange(){
+  var dest=v('tv-dest').value,isLocal=dest==='local';
+  var daysLbl=v('days-lbl');if(daysLbl)daysLbl.textContent=isLocal?'출장시간':'출장일수';
+  var daysSel=v('tv-days');
+  if(daysSel){daysSel.innerHTML=isLocal?'<option value="under4">4시간 미만</option><option value="over4">4시간 이상</option>':'<option value="1">1일</option><option value="2">2일</option><option value="3">3일</option><option value="4">4일</option><option value="5">5일</option>';}
+  var mealSel=v('tv-meals');
+  if(mealSel){mealSel.innerHTML=isLocal?'<option value="0">0식</option><option value="1">1식</option><option value="2">2식</option><option value="3">3식</option>':'<option value="0">0식</option><option value="1">1식</option><option value="2">2식</option><option value="3">3식</option><option value="4">4식</option><option value="6">6식</option><option value="9">9식</option>';}
+  var ss=v('sect-stay'),sf=v('stay-fg'),st=v('sect-trans'),tf=v('trans-fg');
+  if(isLocal){if(ss)ss.style.display='none';if(sf)sf.style.display='none';if(st)st.style.display='none';if(tf)tf.style.display='none';}
+  else{if(ss)ss.style.display='';if(sf)sf.style.display='';if(st)st.style.display='';if(tf)tf.style.display='';}
+  updateMealUI();tvCalc();
+}
+function updateProvCnt(){var days=parseInt(v('tv-days').value)||1;var max=days*3;var sel=v('tv-prov-cnt');var cur=parseInt(sel.value)||0;sel.innerHTML='';for(var i=0;i<=max;i++){var o=document.createElement('option');o.value=i;o.textContent=i+'식';if(i===cur)o.selected=true;sel.appendChild(o);}}
+function setType(t,btn){
+  curType=t;var c=CFG[t];
+  document.querySelectorAll('.seg-btn').forEach(function(b){b.classList.remove('on');});btn.classList.add('on');
+  v('tv-sel-badge').className='tv-badge '+c.badgeClass;
+  v('tv-badge-txt').textContent=c.label+' 선택됨';
+  var banner=v('tv-rule-banner');banner.style.background=c.bannerBg;banner.style.color=c.bannerColor;banner.style.borderColor=c.bannerBorder;
+  var ruleMap={
+    staff:'울산대학교 여비기준지침 적용 — 일비 25,000원/일 · 식비 12,000원/식 (정액) · 숙박 상한 100,000원',
+    student:'공무원여비규정 적용 (학생) — 일비 25,000원/일 · 식비 25,000원/일 (식사 제공 시 1식 8,300원) · 숙박 상한: 서울 100,000원 / 광역시 80,000원 / 그외 70,000원',
+    external:'공무원여비규정 적용 (외부인) — 일비 25,000원/일 · 식비 25,000원/일 · 숙박 상한: 서울 100,000원 / 광역시 80,000원 / 그외 70,000원'
+  };
+  v('tv-rule-txt').textContent=ruleMap[t];
+  updateMealUI();tvCalc();
+}
+function updateMealUI(){
+  var mCnt=v('meal-count-wrap'),mProv=v('meal-prov-wrap'),mProvCnt=v('meal-prov-cnt-wrap');
+  if(curType==='staff'){mCnt.style.display='flex';mProv.style.display='none';mProvCnt.style.display='none';}
+  else if(curType==='student'){mCnt.style.display='none';mProv.style.display='flex';mProvCnt.style.display=(v('tv-meal-prov').value==='yes')?'flex':'none';}
+  else{mCnt.style.display='none';mProv.style.display='none';mProvCnt.style.display='none';}
+}
+function tvCalc(){
+  var dest=v('tv-dest').value;
+  if(dest==='local'){
+    var c=CFG[curType],pilStyle='display:inline-flex;align-items:center;font-size:11px;padding:2px 8px;border-radius:100px;margin-left:6px;background:'+c.pilBg+';color:'+c.pilColor,timeVal=v('tv-days').value,isOver4=timeVal==='over4',dailyLocal=isOver4?20000:10000,timeLabel=isOver4?'4시간 이상 — 20,000원':'4시간 미만 — 10,000원',meals=n('tv-meals'),mealHTML='';
+    if(curType==='staff'){var mealAmt=12000*meals,total=dailyLocal+mealAmt;mealHTML='<div class="dl-row"><div class="dl-name"><i class="ti ti-bowl-spoon" style="font-size:13px"></i>식비</div><div class="dl-right"><div class="dl-amt">'+mealAmt.toLocaleString()+'원</div><div class="dl-note">12,000원 × '+meals+'식</div></div></div>';v('result-area').innerHTML='<div class="rbox"><div style="font-size:12px;font-weight:500;color:var(--color-text-secondary);margin-bottom:8px">산출 내역<span style="'+pilStyle+'">'+c.label+' · 근무지 내 출장</span></div><div class="dl-row"><div class="dl-name"><i class="ti ti-sun" style="font-size:13px"></i>일비</div><div class="dl-right"><div class="dl-amt">'+dailyLocal.toLocaleString()+'원</div><div class="dl-note">'+timeLabel+'</div></div></div>'+mealHTML+'</div><div class="total-row"><span class="total-lbl">예상 합계</span><span class="total-amt">'+total.toLocaleString()+'원</span></div>'+TV_COMMON_NOTE;}
+    else{mealHTML='<div class="dl-row"><div class="dl-name"><i class="ti ti-bowl-spoon" style="font-size:13px"></i>식비</div><div class="dl-right"><div class="dl-amt" style="font-size:12px;color:var(--color-text-secondary)">별도 산정</div><div class="dl-note" style="color:#791F1F;font-weight:500">증빙서류 검토 후 지급. 사업단 문의 필요</div></div></div>';v('result-area').innerHTML='<div class="rbox"><div style="font-size:12px;font-weight:500;color:var(--color-text-secondary);margin-bottom:8px">산출 내역<span style="'+pilStyle+'">'+c.label+' · 근무지 내 출장</span></div><div class="dl-row"><div class="dl-name"><i class="ti ti-sun" style="font-size:13px"></i>일비</div><div class="dl-right"><div class="dl-amt">'+dailyLocal.toLocaleString()+'원</div><div class="dl-note">'+timeLabel+'</div></div></div>'+mealHTML+'</div><div class="total-row"><span class="total-lbl">예상 합계</span><span class="total-amt">'+dailyLocal.toLocaleString()+'원 + 식비</span></div><div class="rule-banner" style="background:#EAF3DE;color:#27500A;border-color:#C0DD97;margin-top:10px"><i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0;margin-top:1px"></i><span>학생·외부인 근무지 내 출장 식비는 사업단 별도 기준 적용.</span></div>'+TV_COMMON_NOTE;}
+    return;
+  }
+  var days=n('tv-days'),stay=v('tv-stay').value,isCar=v('tv-trans').value==='car';
+  v('stay-nights-wrap').style.display=stay==='yes'?'flex':'none';
+  v('stay-cost-wrap').style.display=stay==='yes'?'flex':'none';
+  v('trans-cost-wrap').style.display=isCar?'none':'flex';
+  var daily=25000*days,mealAmt=0,mealNote='',lodgeAmt=0,lodgeNote='',transAmt=0,warns=[],docs=[];
+  var c=CFG[curType];
+  if(curType==='staff'){
+    var meals=n('tv-meals');mealAmt=12000*meals;mealNote='12,000원 × '+meals+'식';
+    if(stay==='yes'){var nights=n('tv-nights'),cost=n('tv-stay-cost');lodgeAmt=Math.min(cost,100000)*nights;lodgeNote='실비 정산, 1박 상한 100,000원 ('+nights+'박)';if(cost>100000)warns.push('숙박비 1박당 '+cost.toLocaleString()+'원 → 상한 100,000원 초과분은 지급 불가');docs.push({text:'숙박 영수증 (원본)'});docs.push({text:'리조트·호텔 이용 시 invoice 추가 제출 필수',sub:'invoice = 숙박업소에서 발급하는 공식 청구서로, 일반 영수증과 별도로 반드시 함께 제출해야 합니다.'});}
+  }else{
+    var limits={seoul:100000,metro:80000,other:70000};var lim=limits[dest]||limits['other'];
+    if(curType==='student'&&v('tv-meal-prov').value==='yes'){var prov=n('tv-prov-cnt'),totalMeals=days*3,paid=Math.max(0,totalMeals-prov);mealAmt=8300*paid;mealNote='8,300원 × '+paid+'식 (전체 '+totalMeals+'식 중 '+prov+'식 제공 제외)';}
+    else{mealAmt=25000*days;mealNote='25,000원 × '+days+'일';}
+    if(stay==='yes'){var nights2=n('tv-nights'),cost2=n('tv-stay-cost');lodgeAmt=Math.min(cost2,lim)*nights2;var dl={seoul:'서울',metro:'광역시',other:'그외 지역'}[dest];lodgeNote='실비 정산, '+dl+' 상한 '+lim.toLocaleString()+'원 ('+nights2+'박)';if(cost2>lim)warns.push('숙박비 1박당 '+cost2.toLocaleString()+'원 → '+dl+' 상한 '+lim.toLocaleString()+'원 초과분 지급 불가');docs.push({text:'숙박 영수증 (원본)'});docs.push({text:'리조트·호텔 이용 시 invoice 추가 제출 필수',sub:'invoice = 숙박업소에서 발급하는 공식 청구서입니다.'});}
+  }
+  if(!isCar){transAmt=n('tv-trans-cost');docs.push({text:'철도·항공·선박·대중교통 승차권 및 영수증'});}
+  else{docs.push({text:'통행료 영수증 (해당 시)'});docs.push({text:'주차료 영수증 (해당 시)'});}
+  var total=daily+mealAmt+lodgeAmt+(isCar?0:transAmt);
+  var pilStyle='display:inline-flex;align-items:center;font-size:11px;padding:2px 8px;border-radius:100px;margin-left:6px;background:'+c.pilBg+';color:'+c.pilColor;
+  var carInfo=isCar?'<div class="dl-car-info"><i class="ti ti-info-circle" style="font-size:12px;margin-right:4px"></i><strong>자가 차량 교통비 산정 기준</strong><br>· 이동거리 10km당 유종별 1L 단가 정액 지급<br>· 통행료·주차비는 실비로 교통비에 포함 가능<br>· 유류 가격 조회: 한국석유공사 opinet.co.kr</div>':'';
+  var transRow=isCar?'<div class="dl-row"><div class="dl-name"><i class="ti ti-car" style="font-size:13px"></i>교통비</div><div class="dl-right"><div class="dl-amt" style="color:var(--color-text-tertiary);font-size:12px">실비 정산 (별도 산출)</div>'+carInfo+'</div></div>':'<div class="dl-row"><div class="dl-name"><i class="ti ti-train" style="font-size:13px"></i>교통비</div><div class="dl-right"><div class="dl-amt">'+(transAmt?transAmt.toLocaleString()+'원':'입력 필요')+'</div><div class="dl-note">실비 정산 (승차권·영수증 증빙)</div></div></div>';
+  var html='<div class="rbox"><div style="font-size:12px;font-weight:500;color:var(--color-text-secondary);margin-bottom:8px">산출 내역<span style="'+pilStyle+'">'+c.label+'</span></div><div class="dl-row"><div class="dl-name"><i class="ti ti-sun" style="font-size:13px"></i>일비</div><div class="dl-right"><div class="dl-amt">'+daily.toLocaleString()+'원</div><div class="dl-note">25,000원 × '+days+'일</div></div></div><div class="dl-row"><div class="dl-name"><i class="ti ti-bowl-spoon" style="font-size:13px"></i>식비</div><div class="dl-right"><div class="dl-amt">'+mealAmt.toLocaleString()+'원</div><div class="dl-note">'+mealNote+'</div></div></div><div class="dl-row"><div class="dl-name"><i class="ti ti-bed" style="font-size:13px"></i>숙박비</div><div class="dl-right"><div class="dl-amt">'+(stay==='yes'?lodgeAmt.toLocaleString()+'원':'해당 없음')+'</div><div class="dl-note">'+(stay==='yes'?lodgeNote:'당일 출장')+'</div></div></div>'+transRow+'</div><div class="total-row"><span class="total-lbl">예상 합계</span><span class="total-amt">'+total.toLocaleString()+'원'+(isCar?' + 교통비':'')+'</span></div>'+(isCar?'<div class="total-note">※ 교통비(자가차량) 제외 금액 — 실비 정산 후 합산</div>':'');
+  if(warns.length)html+='<div class="tv-warn"><i class="ti ti-alert-triangle" style="font-size:13px;margin-right:4px"></i>'+warns.join('<br>')+'</div>';
+  if(docs.length){html+='<div class="doc-box-tv"><div class="doc-tv-title"><i class="ti ti-paperclip" style="font-size:13px;margin-right:4px"></i>필요 증빙서류</div>';docs.forEach(function(d,i){html+='<div class="doc-tv-item">'+(i+1)+'. '+d.text+'</div>';if(d.sub)html+='<div class="doc-tv-sub"><i class="ti ti-info-circle" style="font-size:11px;margin-right:3px"></i>'+d.sub+'</div>';});html+='</div>';}
+  html+=TV_COMMON_NOTE;
+  v('result-area').innerHTML=html;
+}
+updateProvCnt();tvCalc();
+
+
+
+/* ===== 사전검토 ===== */
+var PR_CATS=[
+  {id:'travel',ic:'ti-plane-departure',nm:'출장여비'},{id:'conf',ic:'ti-certificate',nm:'학회등록비'},
+  {id:'lect',ic:'ti-microphone-2',nm:'강사료'},{id:'mat',ic:'ti-flask',nm:'재료비'},
+  {id:'meet',ic:'ti-users',nm:'회의비'},{id:'expert',ic:'ti-user-star',nm:'전문가활용비'},
+  {id:'student',ic:'ti-school',nm:'학생 연구자 활용비'},{id:'equip',ic:'ti-device-desktop-analytics',nm:'연구장비·기계기구'},
+  {id:'sw',ic:'ti-brand-openai',nm:'소프트웨어구독료'},{id:'subj',ic:'ti-users-group',nm:'피실험실습비'},
+  {id:'test',ic:'ti-test-pipe',nm:'시험·시료분석비'},{id:'office',ic:'ti-clipboard',nm:'사무용품비'}
+];
+var FLOW={
+  travel:[{step:'사전 품의',q:'해당 출장에 대해 사전 내부품의(출장신청서) 결재가 완료되었나요?',hint:'모든 사업비는 원인행위 없이 지출할 수 없습니다. 출장 전 출장신청서 제출 및 결재가 필수입니다.',correct:'Y',wr:2,wm:'사전 품의 없이 집행 불가'},{step:'대상자 구분',q:'출장자가 교직원입니까?(학생/외부인이라면 "아니오")',hint:'교직원은 울산대 여비기준지침, 학생/외부인은 공무원여비규정이 적용되어 숙박비 상한액이 다릅니다.',correct:'any'},{step:'숙박 유형',q:'숙박시설이 리조트·호텔 등 Invoice 발급 가능 업소입니까?',hint:'리조트·호텔은 영수증과 Invoice 모두 제출해야 합니다.',correct:'N',wr:1,wm:'영수증 + Invoice 동시 제출 필수'},{step:'교통수단',q:'자가 차량을 이용한 출장인가요?',hint:'자가 차량 이용 시 이동거리 10km당 유종별 1L 단가를 정액 지급하며, 통행·주차영수증을 제출해야 합니다.',correct:'N',wr:1,wm:'10km당 유종별 1L 단가 정액 지급, 통행·주차영수증 필수'},{step:'증빙 준비',q:'교통비(승차권·영수증), 숙박영수증 등 모든 증빙서류를 구비했나요?',hint:'철도·항공·선박·대중교통은 승차권 및 영수증이 실비정산 증빙서류입니다.',correct:'Y',wr:2,wm:'증빙서류 미구비 시 집행 불인정'},{step:'금액 적정성',q:'지급 예정 여비(일비/식비)가 기준에 맞나요?',hint:'[교직원] 일비 25,000원/일·식비 12,000원/식 [학생·외부인] 일비 25,000원/일·식비 25,000원/일, 단 식사 제공 시 학생은 1식 8,300원 적용 가능',correct:'Y',wr:2,wm:'기준 초과 지급 불가 — 정액 기준 재확인 필요'}],
+  conf:[{step:'예산 확인',q:'학회등록비가 사업계획서 또는 예산에 반영되어 있나요?',hint:'사업계획 추진을 위한 원인행위 없이는 지출할 수 없습니다.',correct:'Y',wr:2,wm:'예산 미반영 시 집행 불가'},{step:'사업 연관성',q:'참가 학회·세미나가 사업 수행과 직접 관련이 있나요?',hint:'연구인력 지원비는 연구개발과제 수행과 직접 관련된 경우에만 인정됩니다.',correct:'Y',wr:2,wm:'사업 목적 무관 시 집행 불가'},{step:'대상자 확인',q:'학회 등록비 납부 대상자가 해당 사업의 참여 연구원입니까?',hint:'사업 미참여자의 학회 등록비는 지원 불가입니다.',correct:'Y',wr:2,wm:'사업 미참여자 등록비 집행 불가'},{step:'중복 확인',q:'동일 학회에 대한 중복 등록 또는 대리 등록 여부를 확인하셨나요?',hint:'동일 학회 중복 등록 및 대리 등록은 집행 불가입니다.',correct:'Y',wr:2,wm:'중복·대리 등록 집행 불가'},{step:'사전 승인',q:'학회 참가 사전 승인(출장신청서 결재)이 완료되었나요?',hint:'학회 참가 전 출장신청서 결재는 필수입니다.',correct:'Y',wr:2,wm:'사전 승인 없이 집행 불가'},{step:'집행 수단',q:'e나라도움 카드 또는 계좌이체로 집행 예정이며 전자세금계산서를 수취할 수 있나요?',hint:'사업비는 원칙적으로 e나라도움 카드 또는 계좌이체로 집행해야 합니다.',correct:'Y',wr:2,wm:'e나라도움 카드/계좌이체 외 집행 불가'}],
+  lect:[{step:'예산 확인',q:'강사료가 사업계획서 또는 예산에 반영되어 있나요?',hint:'사업계획 추진을 위한 원인행위 없이는 지출할 수 없습니다.',correct:'Y',wr:2,wm:'예산 미반영 시 집행 불가'},{step:'외부인 여부',q:'강사가 외부인(교직원 및 사업참여자 미포함)인가요?',hint:'내부인과 외부인은 지급 기준이 다릅니다. 내부인은 본연의 업무 범위 여부를 먼저 확인해야 합니다.',correct:'Y',wr:2,wm:'내부인 강사료 지급 불가 — 기준 재확인 필요'},{step:'단가 확인',q:'강사료 지급 예정 금액이 기준 단가 이내인가요?',hint:'특1급 400,000원 / 특2급 300,000원 / 일반1급 250,000원 / 일반2급 150,000원 / 일반3급 100,000원 / 일반4급 80,000원 / 일반5급 60,000원 (최초 1시간 기준)',correct:'Y',wr:2,wm:'기준 단가 초과 지급 불가'},{step:'성범죄 조회',q:'강사에 대한 성범죄 경력 조회가 완료되었나요?',hint:'강사료 집행 시 성범죄 경력 조회 결과 서류를 반드시 첨부하여야 합니다.',correct:'Y',wr:2,wm:'성범죄 경력 조회 필수 — 미이행 시 집행 불가'},{step:'공직자 확인',q:'강사가 공직자(공무원·공공기관 직원 등 청탁금지법 적용 대상)입니까?',hint:'공직자에 대한 강의료는 청탁금지법 시행령 제25조 상한액 기준이 별도 적용됩니다.',correct:'N',wr:1,wm:'공직자 강의료: 청탁금지법 시행령 제25조 상한액 별도 확인 필요'},{step:'증빙 준비',q:'강의료 지급에 대한 증빙서류를 모두 구비했나요?',hint:'강사 이력서, 강의자료, 강사료 산정 근거, 성범죄 경력 조회 결과 서류를 반드시 첨부해야 합니다.',correct:'Y',wr:2,wm:'증빙 미구비 시 집행 불인정'}],
+  mat:[{step:'예산 확인',q:'재료비가 사업계획서 또는 예산에 반영되어 있나요?',hint:'사업계획 추진을 위한 원인행위 없이는 지출할 수 없습니다.',correct:'Y',wr:2,wm:'예산 미반영 시 집행 불가'},{step:'사업 연관성',q:'구매 예정 재료·물품이 사업 수행과 직접 관련이 있나요?',hint:'사업 목적과 무관한 재료비 집행은 불인정됩니다.',correct:'Y',wr:2,wm:'사업 목적 무관 재료비 집행 불가'},{step:'단가 확인',q:'구매 예정 물품의 단가가 200만원 이상입니까?',hint:'200만원 이상 구매건은 중앙구매 대상입니다. 500만원 이상은 복수 견적서 2개 이상 필수입니다.',correct:'N',wr:1,wm:'200만원 이상: 중앙구매 대상 — 구매 담당자 사전 협의 필요'},{step:'증빙 수취',q:'전자세금계산서 또는 카드 매출전표로 증빙 수취가 가능한 거래처입니까?',hint:'보조사업비는 전자세금계산서 수취를 원칙으로 합니다.',correct:'Y',wr:2,wm:'전자세금계산서 미수취 거래처 집행 불가'},{step:'자산 여부',q:'구입 물품이 자산성 물품입니까?',hint:'자산성 물품은 재료비가 아닌 기계기구(1314) 또는 집기비품(1315) 계정으로 집행해야 합니다.',correct:'N',wr:1,wm:'자산성 물품: 기계기구(1314) 또는 집기비품(1315)으로 처리 필요'},{step:'증빙 준비',q:'재료비 집행을 위한 증빙이 모두 준비되었나요?',hint:'구매요청서, 세금계산서(또는 영수증), 납품확인서(검수조서) 필수.',correct:'Y',wr:2,wm:'증빙 미구비 시 집행 불인정'}],
+  meet:[{step:'사전 품의',q:'회의비 집행을 위한 사전 품의가 완료되었나요?',hint:'회의비는 사전 승인 없이 사용 시 즉시 오사용으로 간주됩니다.',correct:'Y',wr:2,wm:'사전 품의 없이 집행 불가 — 오사용 처리'},{step:'1인 한도',q:'1인 1회 회의비가 기준금액(50,000원) 이내입니까?',hint:'울산대학교 예산 편성 집행 지침서 기준 1인 1회 50,000원 이내. 특정 프로그램은 별도 지침 적용.',correct:'Y',wr:2,wm:'한도 초과 집행 불가'},{step:'집행 시간',q:'회의비 집행 일시가 주말·공휴일·심야(22시~09시)는 아닌가요?',hint:'주말·공휴일·심야(22시~09시)에는 회의비 사용이 불가합니다.',correct:'Y',wr:2,wm:'제한 시간대 집행 불가 — 오사용 처리'},{step:'업소 확인',q:'회의비 집행 업소가 유흥업소·부가세 미발행 업소가 아닌 적합한 업소인가요?',hint:'유흥업소, 부가세가 함께 결제되지 않는 업소는 집행이 불가합니다.',correct:'Y',wr:2,wm:'부적합 업소 사용 집행 불가'},{step:'관내 원칙',q:'집행 장소가 관내(울산)이거나, 출장 시 출장신청서가 첨부되었나요?',hint:'회의비는 원칙적으로 관내 집행. 타지역 집행 시 출장신청서 첨부가 필수입니다.',correct:'Y',wr:2,wm:'관내 원칙 위반 또는 출장신청서 미첨부'},{step:'증빙 준비',q:'회의록, 영수증, 참석자 서명부가 준비되었나요?',hint:'회의록, 영수증(카드매출전표), 참석자 서명부는 필수 증빙서류입니다.',correct:'Y',wr:2,wm:'증빙 미구비 시 집행 불인정'}],
+  expert:[{step:'예산 확인',q:'전문가활용비가 사업계획서 또는 예산에 반영되어 있나요?',hint:'모든 사업비는 원인행위 없이 지출할 수 없습니다.',correct:'Y',wr:2,wm:'사전 품의 없이 집행 불가'},{step:'대상자 구분',q:'전문가활용비 지급 대상자가 외부인입니까?',hint:'내부인(교직원)의 경우 본연의 업무 해당 여부를 확인해야 합니다.',correct:'Y',wr:2,wm:'내부인 위원회 참석수당 지급 불가'},{step:'단가 확인',q:'지급 예정 금액이 기준(시간당 150,000원, 일 300,000원) 이하입니까?',hint:'추가지급 요건(A4 5장 이상 또는 4시간 이상)을 충족하면 일 최대 400,000원까지 가능합니다.',correct:'Y',wr:2,wm:'기준 단가 초과 지급 불가'},{step:'원격지 여비',q:'원격지에서 참석한 외부 전문가에게 여비를 추가 지급할 예정입니까?',hint:'원격지 참석자의 교통비·식비·숙박비는 여비규정에 따라 추가 지급 가능합니다.',correct:'N',wr:1,wm:'여비 기준 별도 확인 후 포함 지급'},{step:'이력서 확인',q:'전문가활용비 지급을 위한 전문가의 이력서가 준비되었나요?',hint:'전문가활용비 지급 검토를 위해 이력서를 반드시 첨부해야 합니다.',correct:'Y',wr:2,wm:'전문가 이력서 미첨부 시 집행 불인정'},{step:'증빙 준비',q:'자문·심사 내역(결과물 또는 참석 확인서)과 지급 산정 근거를 구비했나요?',hint:'A4 5장 이상 결과물 또는 4시간 이상 자문 여부에 따라 추가지급 여부가 결정됩니다.',correct:'Y',wr:2,wm:'증빙 미구비 시 집행 불인정'}],
+  student:[{step:'과제 등록',q:'인건비 지급 대상 학생이 해당 연구과제에 참여하는 학생연구자입니까?',hint:'참여연구원편성표에 포함된 학생연구자에 한하여 지급 가능합니다.',correct:'Y',wr:2,wm:'과제 미등록 학생 연구자 활용비 지급 불가'},{step:'학위 과정',q:'학생연구자의 학위 과정이 확인되었나요? (학사/석사/박사)',hint:'박사과정 월 3,000,000원 / 석사과정 월 2,200,000원 / 학사과정 월 1,300,000원',correct:'Y',wr:1,wm:'학위 과정별 상한액 기준 확인 필요'},{step:'지급 상한',q:'지급 예정 금액이 학위 과정별 월 상한액 이내입니까?',hint:'박사 월 300만원 / 석사 월 220만원 / 학사 월 130만원 이내.',correct:'Y',wr:2,wm:'학위 과정별 지급 상한액 초과 불가'},{step:'참여 서류',q:'연구참여확약서, 월별 업무 확인서 등의 서류를 구비했나요?',hint:'학생 연구자 활용비 지급을 위해 필수서류를 반드시 구비해야 합니다.',correct:'Y',wr:2,wm:'필수 참여 서류 미구비 시 집행 불인정'},{step:'계좌 서류',q:'개인정보동의서, 통장사본, 신분증사본이 준비되었나요?',hint:'인건비지급청구서와 함께 필수 서류가 첨부되어야 합니다.',correct:'Y',wr:2,wm:'계좌지급 필수 서류 미구비 시 집행 불인정'}],
+  equip:[{step:'사전 품의',q:'연구장비·기계기구 구입이 사업계획서에 반영되어 있고 사전 품의가 완료되었나요?',hint:'모든 사업비는 사업계획 추진을 위한 원인행위에 근거해야 합니다.',correct:'Y',wr:2,wm:'사업계획 미반영·사전 품의 미완료 시 집행 불가'},{step:'도입 심의',q:'구입 항목의 단가가 3천만원 이상입니까?',hint:'1억원 이상 연구시설·장비는 중앙RISE센터 도입심의가 필수입니다. 3천만원 이상 1억원 미만은 울산RISE센터의 사전 승인이 필요합니다.',correct:'N',wr:1,wm:'3천만원↑: 울산RISE센터 사전 승인 / 1억원↑: 중앙RISE센터 도입심의 필수'},{step:'SW 여부',q:'구매 물품이 소프트웨어라면, 1년 초과 장기 사용 제품입니까?',hint:'1년 초과 장기 사용 소프트웨어는 집기비품(1315) 자산으로 처리해야 합니다.',correct:'N',wr:1,wm:'1년 초과 소프트웨어는 집기비품(1315) 자산 처리 필요'},{step:'구매 절차',q:'UWIN 구매요구서 작성 및 구매 담당자와 사전 협의를 완료했나요?',hint:'유형자산 구매는 UWIN → 구매관리 → 구매요구등록으로 구매요구서를 작성해야 합니다.',correct:'Y',wr:2,wm:'구매 담당자 사전 협의 없이 집행 불가'},{step:'결재선 확인',q:'구매요구서 작성 이후 전자결재 시, 결재선 리스트를 숙지하고 계신가요?',hint:'글로컬 재원(GL, GC)을 활용한 구매요구 결재의 경우, 결재선에 글로컬 예산 담당자와 구매 담당자를 수기로 지정해야 합니다.',correct:'Y',wr:1,wm:'결재선(글로컬 예산담당자·구매담당자) 수기 지정 필요'}],
+  sw:[{step:'예산 확인',q:'소프트웨어 구독료가 사업계획서 또는 예산에 반영되어 있나요?',hint:'사업계획 추진을 위한 원인행위 없이는 지출할 수 없습니다.',correct:'Y',wr:2,wm:'예산 미반영 시 집행 불가'},{step:'사전 승인',q:'소프트웨어 구독 전 사업단 승인 및 문의를 완료했나요?',hint:'구독형 소프트웨어는 자체 구매 불가하며, 구매 신청 후 사업단 승인이 필수입니다.',correct:'Y',wr:2,wm:'사업단 승인 없이 자체 구매 불가'},{step:'결제 방식',q:'구독 결제는 팀 구성원 개인카드 선결제 후 실비 정산 방식입니까?',hint:'구독형 소프트웨어 및 API·크레딧형 서비스 모두 개인카드 선결제 후 실비 정산 방식으로 집행합니다.',correct:'Y',wr:2,wm:'공용카드 자동결제 금지 — 개인카드 선결제 후 정산 필수'},{step:'결제 단위',q:'월 단위 수동 구독 결제 예정인가요?',hint:'월 단위 구독 서비스에 한하여 수동 결제 가능합니다. 자동 갱신 결제는 불가합니다.',correct:'Y',wr:2,wm:'자동 갱신 결제 불가 — 월 단위 수동 결제만 허용'},{step:'목적 확인',q:'소프트웨어가 과제 수행의 효율성 향상 및 결과 도출에 직접 활용되는 도구입니까?',hint:'생성형 AI 구독 서비스는 연구과제의 효율성·결과도출 목적에 한하여 집행 가능합니다.',correct:'Y',wr:2,wm:'과제 수행 무관 소프트웨어 집행 불가'},{step:'증빙 준비',q:'결제 영수증 및 사용 증빙(스크린샷 등) 서류가 준비되었나요?',hint:'구독료에 대한 Invoice, Receipt와 구독을 증빙하는 사용 증빙(스크린샷 등)이 필수입니다.',correct:'Y',wr:2,wm:'영수증 및 사용 증빙 미구비 시 집행 불가'}],
+  subj:[{step:'예산 확인',q:'피실험실습비가 사업계획서 또는 예산에 반영되어 있나요?',hint:'사업계획 추진을 위한 원인행위 없이는 지출할 수 없습니다.',correct:'Y',wr:2,wm:'예산 미반영 시 집행 불가'},{step:'운영계획',q:'실험·설문·테스트 등의 세부 운영계획이 수립되어 있나요?',hint:'피실험실습비는 구체적인 운영계획이 수립된 경우에만 집행 가능합니다.',correct:'Y',wr:2,wm:'운영계획 미수립 시 집행 불가'},{step:'내부 팀원',q:'피험자 범위에 내부 연구팀원이 포함되어 있나요?',hint:'내부 연구팀원(교직원·참여 학생연구자)은 피실험실습비 지급 대상에서 제외됩니다.',correct:'N',wr:2,wm:'내부 연구팀원에게 피실험실습비 지급 불가'},{step:'지급 형태',q:'피실험실습비를 상품권 등 유가증권으로 지급 예정이신가요?',hint:'피실험실습비는 현금(계좌이체) 지급이 원칙입니다.',correct:'N',wr:2,wm:'유가증권(상품권 등)으로 지급 불가'},{step:'기프티콘',q:'피실험실습비를 기프티콘으로 지급 예정이신가요?',hint:'기프티콘은 회당 1만원 미만, 전체 참여자 50% 이내 범위에서만 허용됩니다.',correct:'N',wr:1,wm:'기프티콘: 회당 1만원 미만 · 참여자 50% 이내 범위만 허용'},{step:'증빙 준비',q:'활동보고서, 참여 확인서, 영수증 등 증빙자료를 구비했나요?',hint:'피실험실습비 지급 후 활동보고서, 참여자 확인서, 계좌이체 영수증 등을 반드시 구비해야 합니다.',correct:'Y',wr:2,wm:'증빙 미구비 시 집행 불인정'}],
+  test:[{step:'예산 확인',q:'시험·시료분석비가 사업계획서 또는 예산에 반영되어 있나요?',hint:'사업계획 추진을 위한 원인행위 없이는 지출할 수 없습니다.',correct:'Y',wr:2,wm:'예산 미반영 시 집행 불가'},{step:'사업 연관성',q:'시험·분석 내용이 연구개발과제 수행에 직접 필요한 사항입니까?',hint:'연구개발과제와 직접 관련 없는 시험·분석 의뢰는 집행 불가입니다.',correct:'Y',wr:2,wm:'사업 연관성 없으면 집행 불가'},{step:'기간 내 수행',q:'과제/프로그램 운영기간 내 수행 및 완료되는 시험·분석입니까?',hint:'운영기간 종료 후 수행되는 시험·분석 결과는 정산에 인정되지 않습니다.',correct:'Y',wr:2,wm:'운영기간 외 시험·분석 집행 불가'},{step:'금액 확인',q:'시험·시료분석비의 집행 예정 금액이 2,200만원 이상인가요?',hint:'2,200만원 이상은 중앙구매 및 입찰 대상입니다.',correct:'N',wr:1,wm:'2,200만원 이상: 중앙구매 및 입찰 대상 — 구매 담당자 협의 필요'},{step:'증빙 수취',q:'전자세금계산서 또는 계좌이체 증빙을 수취할 수 있는 기관입니까?',hint:'보조사업비는 전자세금계산서 수취를 원칙으로 합니다.',correct:'Y',wr:2,wm:'전자세금계산서 미수취 기관 집행 불가'},{step:'증빙 준비',q:'시험·분석 결과보고서(또는 성적서)와 세금계산서를 구비했나요?',hint:'시험·분석 결과보고서(성적서), 세금계산서, 의뢰서 등을 함께 구비해야 합니다.',correct:'Y',wr:2,wm:'증빙 미구비 시 집행 불인정'}],
+  office:[{step:'예산 확인',q:'사무용품비가 사업계획서 또는 예산에 반영되어 있나요?',hint:'사업계획 추진을 위한 원인행위 없이는 지출할 수 없습니다.',correct:'Y',wr:2,wm:'예산 미반영 시 집행 불가'},{step:'목적 확인',q:'구입 물품이 연구 수행에 직접 필요한 사무용 소모성 물품인가요?',hint:'개인 사용 목적이거나 사업 수행과 무관한 물품은 집행 불가입니다.',correct:'Y',wr:2,wm:'개인 사용 목적 또는 사업 무관 품목 집행 불가'},{step:'자산 여부',q:'구입 물품이 자산성 물품에 해당합니까?',hint:'자산성 물품은 집기비품(1315) 계정으로 집행해야 합니다.',correct:'N',wr:2,wm:'자산성 물품 사무용품비 집행 불가 — 집기비품(1315)으로 처리 필요'},{step:'수량 적정',q:'구매 수량이 사업 수행에 필요한 적정 수량인가요?',hint:'수량이 과다할 경우 소명 자료를 요청받을 수 있습니다.',correct:'Y',wr:1,wm:'수량 과다 — 소명 자료 필요할 수 있음'},{step:'사용계획',q:'구입 물품에 대한 사용계획이 기재된 문서를 첨부했나요?',hint:'사무용품 구매 시 품목별 사용계획을 구매요청서에 명기해야 합니다.',correct:'Y',wr:2,wm:'사용계획 미기재 시 집행 불인정'},{step:'증빙 준비',q:'거래명세서(품명·수량·단가 명시)를 수취할 수 있나요?',hint:'거래명세서에는 품명, 수량, 단가가 명확히 기재되어야 합니다.',correct:'Y',wr:2,wm:'거래명세서 미수취 시 집행 불인정'}]
+};
+var prCat=null,prStep=0,prAns=[];
+function prBar(cur,total){v('pr-bar').innerHTML=Array.from({length:total},function(_,i){return'<div class="sb-s'+(i<cur?' done':i===cur?' active':'')+'"></div>';}).join('');}
+function renderCats(){prCat=null;prStep=0;prAns=[];prBar(0,6);v('pr-lbl').innerHTML='<span>단계 1 / 6</span> — 집행항목 선택';v('pr-main').innerHTML='<div class="cat-grid">'+PR_CATS.map(function(c){return'<div class="cc" onclick="startPr(\''+c.id+'\',this)"><div class="cc-ic"><i class="ti '+c.ic+'"></i></div><div class="cc-nm">'+c.nm+'</div></div>';}).join('')+'</div>';}
+function startPr(cat,el){document.querySelectorAll('.cc').forEach(function(e){e.classList.remove('sel');});el.classList.add('sel');prCat=cat;prStep=0;prAns=[];renderQ();}
+function renderQ(){var qs=FLOW[prCat];var q=qs[prStep];var ans=prAns[prStep]||null;var total=qs.length;prBar(prStep,total);v('pr-lbl').innerHTML='<span>단계 '+(prStep+1)+' / '+total+'</span> — '+q.step;v('pr-main').innerHTML='<div class="q-box"><div class="q-txt">'+q.q+'</div>'+(q.hint?'<div class="q-hint" style="margin-top:5px"><i class="ti ti-info-circle" style="font-size:12px;margin-right:3px"></i>'+q.hint+'</div>':'')+'</div><div class="ans-wrap"><button class="ans-btn'+(ans==='Y'?' ay':'')+'" onclick="setAns(\'Y\')"><i class="ti ti-check"></i> 예</button><button class="ans-btn'+(ans==='N'?' an':'')+'" onclick="setAns(\'N\')"><i class="ti ti-x"></i> 아니오</button></div><div class="nav-btns"><button class="nav-btn" onclick="prBack()" '+(prStep===0?'disabled':'')+'>← 이전</button><button class="nav-btn primary" onclick="prNext()" '+(!ans?'disabled':'')+'>다음 →</button></div>';}
+function setAns(a){prAns[prStep]=a;renderQ();}
+function prNext(){var q=FLOW[prCat][prStep];var a=prAns[prStep];var isW=(q.correct!=='any'&&a!==q.correct);if(isW&&(q.wr||0)===2){renderBlock(q.wm,prStep);return;}if(prStep<FLOW[prCat].length-1){prStep++;renderQ();}else renderFinal();}
+function prBack(){if(prStep>0){prStep--;renderQ();}else renderCats();}
+function renderBlock(reason,step){var qs=FLOW[prCat];var cat=PR_CATS.find(function(c){return c.id===prCat;});prBar(qs.length,qs.length);v('pr-lbl').innerHTML='<span>진단 완료</span> — ['+cat.nm+'] 집행 불가';var checks=qs.map(function(q,i){if(i<step)return'<div class="chk-item"><i class="ti ti-circle-check ci-ok"></i><span>'+q.step+' — 통과</span></div>';if(i===step)return'<div class="chk-item"><i class="ti ti-circle-x ci-no"></i><span><strong>'+q.step+'</strong> — '+reason+'</span></div>';return'<div class="chk-item"><i class="ti ti-minus ci-skip"></i><span style="color:var(--color-text-tertiary)">'+q.step+' — 미검토</span></div>';}).join('');v('pr-main').innerHTML='<div class="res-no"><div class="res-vd"><i class="ti ti-circle-x" style="font-size:15px;vertical-align:-2px;margin-right:5px;color:#A32D2D"></i>집행 불가</div><div class="res-desc">'+reason+'<br><span style="margin-top:4px;display:block">해당 사항 해소 후 재검토하거나 담당 부서에 문의하세요.</span></div></div><div class="chk-list">'+checks+'</div><button class="restart-btn" onclick="renderCats()"><i class="ti ti-refresh"></i> 처음부터 다시 검토</button><button class="restart-btn" onclick="prStep='+step+';renderQ()"><i class="ti ti-arrow-left"></i> 해당 질문으로 돌아가기</button>';}
+function renderFinal(){var qs=FLOW[prCat];var cat=PR_CATS.find(function(c){return c.id===prCat;});prBar(qs.length,qs.length);var warns=[];qs.forEach(function(q,i){var a=prAns[i];if(q.correct!=='any'&&a!==q.correct&&(q.wr||0)===1)warns.push({step:q.step,msg:q.wm});});var hasW=warns.length>0;var cls=hasW?'res-warn':'res-ok';var ico=hasW?'ti-alert-triangle':'ti-circle-check';var icCol=hasW?'#854F0B':'#3B6D11';v('pr-lbl').innerHTML='<span>진단 완료</span> — ['+cat.nm+'] 최종 판정';var checks=qs.map(function(q,i){var a=prAns[i];var isW=q.correct!=='any'&&a!==q.correct&&(q.wr||0)===1;return isW?'<div class="chk-item"><i class="ti ti-alert-triangle ci-warn"></i><span><strong>'+q.step+'</strong> — '+q.wm+'</span></div>':'<div class="chk-item"><i class="ti ti-circle-check ci-ok"></i><span>'+q.step+' — 통과</span></div>';}).join('');v('pr-main').innerHTML='<div class="'+cls+'"><div class="res-vd"><i class="ti '+ico+'" style="font-size:15px;vertical-align:-2px;margin-right:5px;color:'+icCol+'"></i>'+(hasW?'조건부 집행 가능':'집행 가능')+'</div><div class="res-desc">'+(hasW?warns.length+'개 주의사항을 확인하고 조치 후 집행하세요.':'모든 요건 충족 — 정상 집행 가능합니다.')+'</div></div><div class="chk-list">'+checks+'</div><button class="restart-btn" onclick="renderCats()"><i class="ti ti-refresh"></i> 다른 항목 검토하기</button>';}
+renderCats();
+
+/* ===== 공통 Sheets 유틸 ===== */
+var SHEET_ID='1QFj3lK6yQLGqmWvnDIIiPG9rG-nYkErKjupN-iEEMig';
+function sheetUrl(name){return'https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=out:csv&sheet='+encodeURIComponent(name);}
+function parseCSV(text){
+  var rows=[],lines=text.split('\n'),headers=parseCSVRow(lines[0]);
+  for(var i=1;i<lines.length;i++){
+    var line=lines[i].trim();if(!line)continue;
+    var vals=parseCSVRow(line),obj={};
+    headers.forEach(function(h,idx){obj[h.trim().replace(/^"|"$/g,'')]=(vals[idx]||'').trim().replace(/^"|"$/g,'');});
+    rows.push(obj);
+  }
+  return rows;
+}
+function parseCSVRow(line){
+  var result=[],cur='',inQ=false;
+  for(var i=0;i<line.length;i++){
+    var c=line[i];
+    if(c==='"'){inQ=!inQ;}
+    else if(c===','&&!inQ){result.push(cur);cur='';}
+    else{cur+=c;}
+  }
+  result.push(cur);return result;
+}
+function showLoadingIn(id,msg){v(id).innerHTML='<div style="text-align:center;padding:20px 0;font-size:12px;color:var(--color-text-tertiary)"><i class="ti ti-loader" style="font-size:18px;display:block;margin-bottom:6px;animation:spin 1s linear infinite"></i>'+(msg||'불러오는 중...')+'</div>';}
+function showErrorIn(id,msg){v(id).innerHTML='<div style="text-align:center;padding:16px;font-size:12px;color:#791F1F;background:#FCEBEB;border-radius:var(--border-radius-md)"><i class="ti ti-alert-triangle" style="margin-right:5px"></i>'+(msg||'데이터를 불러오지 못했습니다.')+'</div>';}
+
+/* ===== FAQ — Sheets 연동 ===== */
+/* 시트 탭명: 자주 묻는 질문 | 컬럼: id, cat, q, a */
+var FAQ_CATS=[{id:'all',nm:'전체'},{id:'travel',nm:'여비'},{id:'budget',nm:'사업비'},{id:'settle',nm:'정산'},{id:'etc',nm:'기타'}];
+var faqs=[];
+var faqCat='all',faqOpen=null;
+
+function loadFaqFromSheet(){
+  showLoadingIn('faq-list','FAQ 불러오는 중...');
+  showLoadingIn('faq-cats','');
+  fetch(sheetUrl('자주 묻는 질문'))
+    .then(function(r){return r.text();})
+    .then(function(csv){
+      var rows=parseCSV(csv);
+      faqs=rows
+        .filter(function(r){return r.q;})
+        .map(function(r,i){return{id:parseInt(r.id||(i+1)),cat:(r.cat||'etc').trim(),q:r.q||'',a:r.a||''};});
+      buildFaqCats();
+      renderFaq();
+    })
+    .catch(function(){
+      showErrorIn('faq-list','FAQ 데이터를 불러오지 못했습니다.<br>시트 공유 설정(링크 있는 모든 사용자 보기)을 확인해주세요.');
+      renderFaqCats();
+    });
+}
+
+function buildFaqCats(){
+  var catIds=FAQ_CATS.map(function(c){return c.id;});
+  var seen={all:true};
+  faqs.forEach(function(f){
+    if(!seen[f.cat]){
+      seen[f.cat]=true;
+      if(catIds.indexOf(f.cat)===-1)FAQ_CATS.push({id:f.cat,nm:f.cat});
+    }
+  });
+}
+
+function renderFaqCats(){
+  v('faq-cats').innerHTML=FAQ_CATS.map(function(c){
+    return'<button class="fc-btn'+(faqCat===c.id?' on':'')+'" onclick="setFaqCat(\''+c.id+'\')">'+c.nm+'</button>';
+  }).join('');
+}
+function setFaqCat(c){faqCat=c;faqOpen=null;renderFaq();}
+function renderFaq(){
+  renderFaqCats();
+  var items=faqCat==='all'?faqs:faqs.filter(function(f){return f.cat===faqCat;});
+  if(!items.length){v('faq-list').innerHTML='<div style="font-size:12px;color:var(--color-text-tertiary);padding:10px 0;text-align:center">해당 카테고리에 질문이 없습니다</div>';return;}
+  v('faq-list').innerHTML=items.map(function(f){
+    return'<div class="faq-item"><div class="faq-q-row" onclick="toggleFaq('+f.id+')"><i class="ti ti-chevron-'+(faqOpen===f.id?'down':'right')+'" style="font-size:12px;color:var(--color-text-tertiary);flex-shrink:0;margin-top:2px"></i><span class="faq-q-txt'+(faqOpen===f.id?' open':'')+'">'+esc(f.q)+'</span></div>'+(faqOpen===f.id?'<div class="faq-ans">'+esc(f.a)+'</div>':'')+'</div>';
+  }).join('');
+}
+function toggleFaq(id){faqOpen=faqOpen===id?null:id;renderFaq();}
+loadFaqFromSheet();
+
+/* ===== 증빙서류 — Sheets 연동 ===== */
+/* 시트 탭명: 증빙서류 | 컬럼: category, title, warn, req, item
+   category: 항목 키(travel/mat/meet 등)
+   title: 항목 표시명
+   warn: 주의사항 (해당 category의 첫 행에만 작성)
+   req: 필수 / 선택
+   item: 서류명                                    */
+var D_SHEET={};
+var D_ORDER=[];
+
+function loadDocFromSheet(){
+  var sel=v('doc-select');
+  sel.innerHTML='<option value="">— 불러오는 중... —</option>';
+  fetch(sheetUrl('증빙서류'))
+    .then(function(r){return r.text();})
+    .then(function(csv){
+      var rows=parseCSV(csv);
+      D_SHEET={};D_ORDER=[];
+      rows.filter(function(r){return r.category&&r.item;}).forEach(function(r,i){
+        var cat=r.category.trim();
+        if(!D_SHEET[cat]){
+          D_SHEET[cat]={title:r.title||cat,warn:r.warn||'',items:[]};
+          D_ORDER.push(cat);
+        }
+        if(r.warn&&!D_SHEET[cat].warn)D_SHEET[cat].warn=r.warn;
+        D_SHEET[cat].items.push({id:i+1,r:(r.req||'').trim()==='필수',n:r.item.trim()});
+      });
+      sel.innerHTML='<option value="">— 집행항목을 선택하세요 —</option>';
+      D_ORDER.forEach(function(k){
+        var o=document.createElement('option');o.value=k;o.textContent=D_SHEET[k].title;sel.appendChild(o);
+      });
+      showDoc('');
+    })
+    .catch(function(){
+      sel.innerHTML='<option value="">— 로드 실패 —</option>';
+      showErrorIn('doc-body','증빙서류 데이터를 불러오지 못했습니다.<br>시트 공유 설정(링크 있는 모든 사용자 보기)을 확인해주세요.');
+    });
+}
+
+function showDoc(key){
+  var body=v('doc-body');
+  if(!key){body.innerHTML='<div class="doc-empty"><i class="ti ti-file-search" style="font-size:22px;margin-bottom:6px;display:block"></i>항목 선택 시 서류 목록이 표시됩니다</div>';return;}
+  var d=D_SHEET[key];
+  if(!d){body.innerHTML='';return;}
+  var warnHTML=d.warn?'<div class="warn-box"><i class="ti ti-alert-triangle" style="font-size:13px;flex-shrink:0;margin-top:1px"></i><span>'+esc(d.warn)+'</span></div>':'';
+  var itemsHTML=d.items.map(function(item){
+    return'<div class="ditem-wrap"><span class="req-tag '+(item.r?'rt-req':'rt-opt')+'">'+(item.r?'필수':'선택')+'</span><div><div class="di-nm">'+esc(item.n)+'</div></div></div>';
+  }).join('');
+  body.innerHTML=warnHTML+'<div>'+itemsHTML+'</div>';
+}
+loadDocFromSheet();
+</script>
+</body>
+</html>

@@ -272,6 +272,7 @@ function handleDestChange(){
   updateMealUI();tvCalc();
 }
 function setType(t,btn){
+  var changed=(t!==curType);
   curType=t;var c=CFG[t];
   document.querySelectorAll('.seg-btn').forEach(function(b){b.classList.remove('on');});btn.classList.add('on');
   v('tv-sel-badge').className='tv-badge '+c.badgeClass;
@@ -283,6 +284,7 @@ function setType(t,btn){
     external:'공무원여비규정 적용 (외부인) — 일비 25,000원/일 · 식비 25,000원/일 · 숙박 상한: 서울 100,000원 / 광역시 80,000원 / 그외 70,000원'
   };
   v('tv-rule-txt').textContent=ruleMap[t];
+  if(changed){v('tv-stay').value='no';v('tv-nights').value='1';v('tv-stay-people').value='';v('tv-stay-cost').value='';v('tv-trans').value='public';v('tv-trans-cost').value='';}
   updateMealUI();tvCalc();
 }
 function updateMealUI(){
